@@ -23,7 +23,8 @@ export type BoardDistribution = (typeof BOARD_DISTRIBUTION_OPTIONS)[number];
 export type PickDistribution = (typeof PICK_DISTRIBUTION_OPTIONS)[number];
 export type SellingRule = (typeof SELLING_OPTIONS)[number];
 export type AllocationRule =
-  | { kind: "equal"; amountPerPick: number }
+  // Each pick gets current cash divided by picks left (including this one), rounded down to the cent. The last pick gets all remaining cash.
+  | { kind: "equal" }
   | { kind: "range"; min: number; max: number }
   | { kind: "steps"; percents: number[] }
   | { kind: "minPlusFree"; min: number };
@@ -68,6 +69,8 @@ export type GameState = {
   cash: number;
   holdings: Holding[];
   board: BoardEntry[];
+  // Tickers sold this round; used to block rebuying a stock in the same round it was sold and to block a second sale in same-industry selling.
+  soldThisRound: string[];
   mustReplaceIndustry: Industry | null;
   events: GameEvent[];
   status: GameStatus;

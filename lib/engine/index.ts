@@ -12,17 +12,19 @@ import type {
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-// Starts a new game state from a config, market, and seed.
+// Starts a new game state from a config, market, and seed. Start year is chosen from the seed between market.startYear and market.endYear - rounds + 1, so every round has price data.
 export function startGame(_config: GameConfig, _market: Market, _seed: number): GameState {
   throw new Error("not implemented");
 }
 
-// Applies a user action and returns the next game state.
-export function gameReducer(_state: GameState, _action: GameAction, _market: Market): GameState {
-  throw new Error("not implemented");
+// Creates a reducer that closes over the market so it can plug directly into React's useReducer.
+export function createGameReducer(_market: Market): (state: GameState, action: GameAction) => GameState {
+  return (_state: GameState, _action: GameAction): GameState => {
+    throw new Error("not implemented");
+  };
 }
 
-// Builds the board entries that should be shown for the current round.
+// Called once at the start of each round. The board's stocks are stored in GameState.board and do not change when the player sells. Selling only recomputes pickable and reason on existing entries. The only exception is same-industry selling: if no pickable stock from the replacement industry is on the board, one is swapped in (never an owned stock or a stock in soldThisRound). On a same-industry board, the board is redrawn from the replacement industry.
 export function drawBoard(_state: GameState, _market: Market): BoardEntry[] {
   throw new Error("not implemented");
 }

@@ -1,8 +1,6 @@
 export const STARTING_BUDGET = 10000;
 export const MARKET_START_YEAR = 2000;
 export const MARKET_END_YEAR = 2024;
-export const GAME_START_YEAR_MIN = 2000;
-export const GAME_START_YEAR_MAX = 2010;
 
 export const INDUSTRIES = [
   "Technology",
