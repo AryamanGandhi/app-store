@@ -282,7 +282,8 @@ export function validateConfig(config: GameConfig): ConfigCheckResult {
     }
   }
 
-  if (holdYearsAreValid && isFiniteNumber(holdYears) && roundsAreValid && holdYears > rounds) {
+  // A stock can only auto-sell when a later round starts, so a hold as long as the game never sells.
+  if (holdYearsAreValid && isFiniteNumber(holdYears) && roundsAreValid && holdYears >= rounds) {
     warnings.push({
       field: "holdYears",
       message: `With ${rounds} rounds and a ${holdYears}-year hold, no stock will sell before the game ends.`,
