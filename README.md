@@ -34,6 +34,7 @@ All four must pass on every PR.
 - Budget Boss: 6 rounds, 8 per round (one per industry), hold until end, $500 minimum plus any amount, no selling
 - Active Trader: 10 rounds, 10 per round, 3-year hold, $500 to $3,000 per pick, sell any stock
 - Sector Swap: 8 rounds, 8 per round, one per industry, hold until end, set amounts 5-25%, sell but replace with same industry
+  - Selling and replacing uses your pick for that round.
 - Sector Focus: 8 rounds, 5 per round all from one industry, 5-year hold, equal split, no selling
 
 ## Custom Mode
