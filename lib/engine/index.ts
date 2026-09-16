@@ -5,7 +5,6 @@ import type {
   Holding,
   Market,
   SellCheck,
-  SpendOptions,
 } from "@/lib/types";
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
@@ -25,10 +24,8 @@ export function createGameReducer(_market: Market): (state: GameState, action: G
 // Board drawing lives in board.ts.
 export { drawBoard } from "@/lib/engine/board";
 
-// Returns the spend controls available for the current state.
-export function getSpendOptions(_state: GameState): SpendOptions {
-  throw new Error("not implemented");
-}
+// Spend options live in spend.ts.
+export { getSpendOptions } from "@/lib/engine/spend";
 
 // Calculates the value of a holding at a given year in the market.
 export function getHoldingValue(_holding: Holding, _market: Market, _year: number): number {
