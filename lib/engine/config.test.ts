@@ -110,8 +110,17 @@ describe("preset configs", () => {
     ]);
   });
 
-  it("reports no warnings for the other five presets", () => {
-    for (const preset of [oneShot, budgetBoss, activeTrader, sectorSwap, sectorFocus]) {
+  it("warns that One Shot's hold runs as long as the game", () => {
+    expect(validateConfig(oneShot).warnings).toEqual([
+      {
+        field: "holdYears",
+        message: "With 5 rounds and a 5-year hold, no stock will sell before the game ends.",
+      },
+    ]);
+  });
+
+  it("reports no warnings for the other four presets", () => {
+    for (const preset of [budgetBoss, activeTrader, sectorSwap, sectorFocus]) {
       expect(validateConfig(preset).warnings).toEqual([]);
     }
   });
@@ -238,7 +247,21 @@ const errorCases: { title: string; config: GameConfig; field: keyof GameConfig; 
 ];
 
 describe("validateConfig warnings", () => {
-  it("warns that a hold longer than the game will never sell", () => {
+  it("warns when the hold is as long as the game", () => {
+    expect(validateConfig(configWith({ rounds: 5, holdYears: 5 })).warnings).toContainEqual({
+      field: "holdYears",
+      message: "With 5 rounds and a 5-year hold, no stock will sell before the game ends.",
+    });
+
+    const tenRoundConfig = configWith({ rounds: 10, holdYears: 10, pickDistribution: "any" });
+
+    expect(validateConfig(tenRoundConfig).warnings).toContainEqual({
+      field: "holdYears",
+      message: "With 10 rounds and a 10-year hold, no stock will sell before the game ends.",
+    });
+  });
+
+  it("warns when the hold runs past the end of the game", () => {
     expect(validateConfig(configWith({ rounds: 5, holdYears: 10 })).warnings).toContainEqual({
       field: "holdYears",
       message: "With 5 rounds and a 10-year hold, no stock will sell before the game ends.",
@@ -255,7 +278,8 @@ describe("validateConfig warnings", () => {
   });
 
   it("does not warn when the hold fits inside the game", () => {
-    expect(validateConfig(configWith({ rounds: 5, holdYears: 5 })).warnings).toEqual([]);
+    expect(validateConfig(configWith({ rounds: 6, holdYears: 5 })).warnings).toEqual([]);
+    expect(validateConfig(configWith({ holdYears: 5 })).warnings).toEqual([]);
     expect(validateConfig(configWith({ rounds: 10, holdYears: 3, pickDistribution: "any" })).warnings).toEqual([]);
     expect(validateConfig(configWith({ holdYears: "indefinite" })).warnings).toEqual([]);
   });
