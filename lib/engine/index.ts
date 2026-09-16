@@ -1,5 +1,4 @@
 import type {
-  BoardEntry,
   GameAction,
   GameConfig,
   GameState,
@@ -23,10 +22,8 @@ export function createGameReducer(_market: Market): (state: GameState, action: G
   };
 }
 
-// Called once at the start of each round. The board's stocks are stored in GameState.board and do not change when the player sells. Selling only recomputes pickable and reason on existing entries. The only exception is same-industry selling: if no pickable stock from the replacement industry is on the board, one is swapped in (never an owned stock or a stock in soldThisRound). On a same-industry board, the board is redrawn from the replacement industry.
-export function drawBoard(_state: GameState, _market: Market): BoardEntry[] {
-  throw new Error("not implemented");
-}
+// Board drawing lives in board.ts.
+export { drawBoard } from "@/lib/engine/board";
 
 // Returns the spend controls available for the current state.
 export function getSpendOptions(_state: GameState): SpendOptions {
