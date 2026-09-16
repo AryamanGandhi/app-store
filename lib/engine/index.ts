@@ -1,6 +1,5 @@
 import type {
   BoardEntry,
-  ConfigCheckResult,
   GameAction,
   GameConfig,
   GameState,
@@ -44,12 +43,5 @@ export function canSell(_state: GameState, _holding: Holding): SellCheck {
   throw new Error("not implemented");
 }
 
-// Checks whether a config is valid and returns errors and warnings.
-export function validateConfig(_config: GameConfig): ConfigCheckResult {
-  throw new Error("not implemented");
-}
-
-// Produces plain-English descriptions for a game config.
-export function describeConfig(_config: GameConfig): string[] {
-  throw new Error("not implemented");
-}
+// Config checks and plain-English rule descriptions live in config.ts.
+export { validateConfig, describeConfig } from "@/lib/engine/config";
