@@ -38,42 +38,28 @@ const checkStock = (state: GameState, stock: Stock): { pickable: boolean; reason
 const availableStocks = (state: GameState, market: Market) =>
   market.stocks.filter((stock) => isAvailable(state, stock));
 
-// Industries that can still offer a stock this round.
-const candidateIndustries = (state: GameState, market: Market): Industry[] => {
+// Every industry that can still offer a stock this round. Ownership does not remove an industry.
+const industriesWithStock = (state: GameState, market: Market): Industry[] => {
   const stocks = availableStocks(state, market);
-  const industriesWithStock = INDUSTRIES.filter((industry) =>
-    stocks.some((stock) => stock.industry === industry),
-  );
+
+  return INDUSTRIES.filter((industry) => stocks.some((stock) => stock.industry === industry));
+};
+
+// A same-industry board can only offer industries the player may still pick from this round.
+const sameIndustryCandidates = (state: GameState, market: Market): Industry[] => {
+  const industries = industriesWithStock(state, market);
 
   if (state.mustReplaceIndustry !== null) {
-    return industriesWithStock.filter((industry) => industry === state.mustReplaceIndustry);
+    return industries.filter((industry) => industry === state.mustReplaceIndustry);
   }
 
   if (state.config.pickDistribution !== "onePerIndustry") {
-    return industriesWithStock;
+    return industries;
   }
 
-  const unownedIndustries = industriesWithStock.filter((industry) => !ownsIndustry(state, industry));
+  const unownedIndustries = industries.filter((industry) => !ownsIndustry(state, industry));
 
-  return unownedIndustries.length > 0 ? unownedIndustries : industriesWithStock;
-};
-
-const drawOnePerIndustry = (state: GameState, market: Market, rng: Rng): Stock[] => {
-  const industries = rng.shuffle(candidateIndustries(state, market)).slice(0, state.config.stocksPerRound);
-
-  return industries.flatMap((industry) => {
-    const stocks = availableStocks(state, market).filter((stock) => stock.industry === industry);
-
-    return stocks.length > 0 ? [rng.pick(stocks)] : [];
-  });
-};
-
-const drawSameIndustry = (state: GameState, market: Market, rng: Rng): Stock[] => {
-  const candidates = candidateIndustries(state, market);
-  const industry = state.mustReplaceIndustry ?? (candidates.length > 0 ? rng.pick(candidates) : rng.pick(INDUSTRIES));
-  const stocks = availableStocks(state, market).filter((stock) => stock.industry === industry);
-
-  return rng.shuffle(stocks).slice(0, state.config.stocksPerRound);
+  return unownedIndustries.length > 0 ? unownedIndustries : industries;
 };
 
 // A board with nothing pickable would leave the player stuck, so one is swapped in when one exists.
@@ -82,13 +68,32 @@ const withPickableStock = (state: GameState, market: Market, drawn: Stock[], rng
     return drawn;
   }
 
-  const pickable = availableStocks(state, market).filter((stock) => checkStock(state, stock).pickable);
+  const industriesOnBoard = new Set(drawn.map((stock) => stock.industry));
+  const pickable = availableStocks(state, market).filter(
+    (stock) => checkStock(state, stock).pickable && !industriesOnBoard.has(stock.industry),
+  );
 
   if (pickable.length === 0) {
     return drawn;
   }
 
   return [...drawn.slice(0, -1), rng.pick(pickable)];
+};
+
+const drawOnePerIndustry = (state: GameState, market: Market, rng: Rng): Stock[] => {
+  const industries = rng.shuffle(industriesWithStock(state, market)).slice(0, state.config.stocksPerRound);
+  const stocks = availableStocks(state, market);
+  const drawn = industries.map((industry) => rng.pick(stocks.filter((stock) => stock.industry === industry)));
+
+  return withPickableStock(state, market, drawn, rng);
+};
+
+const drawSameIndustry = (state: GameState, market: Market, rng: Rng): Stock[] => {
+  const candidates = sameIndustryCandidates(state, market);
+  const industry = state.mustReplaceIndustry ?? (candidates.length > 0 ? rng.pick(candidates) : rng.pick(INDUSTRIES));
+  const stocks = availableStocks(state, market).filter((stock) => stock.industry === industry);
+
+  return rng.shuffle(stocks).slice(0, state.config.stocksPerRound);
 };
 
 const drawAnyIndustry = (state: GameState, market: Market, rng: Rng): Stock[] => {

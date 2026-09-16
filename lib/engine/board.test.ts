@@ -116,16 +116,35 @@ describe("drawBoard board shapes", () => {
     }
   });
 
-  it("always offers the last unused industry on a one-per-industry board", () => {
+  it("keeps the last unused industry on the board and marks the owned ones", () => {
     const lastUnused = INDUSTRIES[INDUSTRIES.length - 1];
     const holdings = INDUSTRIES.filter((industry) => industry !== lastUnused).map((industry) =>
       holdingForIndustry(market, industry),
     );
     const board = drawBoard(stateWith({ holdings }), market);
+    const unusedEntry = board.find((entry) => entry.stock.industry === lastUnused);
 
-    expect(board).toHaveLength(1);
-    expect(industriesOf(board)).toEqual([lastUnused]);
-    expect(board[0].pickable).toBe(true);
+    expect(board).toHaveLength(5);
+    expect(new Set(industriesOf(board)).size).toBe(5);
+    expect(unusedEntry).toMatchObject({ pickable: true, reason: null });
+
+    for (const entry of board.filter((candidate) => candidate.stock.industry !== lastUnused)) {
+      expect(entry).toMatchObject({
+        pickable: false,
+        reason: `You already own a ${entry.stock.industry} stock.`,
+      });
+    }
+  });
+
+  it("keeps a full one-per-industry board as the player owns more industries", () => {
+    for (let ownedCount = 0; ownedCount <= 7; ownedCount += 1) {
+      const holdings = INDUSTRIES.slice(0, ownedCount).map((industry) => holdingForIndustry(market, industry));
+      const board = drawBoard(stateWith({ holdings }), market);
+
+      expect(board).toHaveLength(5);
+      expect(new Set(industriesOf(board)).size).toBe(5);
+      expect(board.some((entry) => entry.pickable)).toBe(true);
+    }
   });
 });
 
