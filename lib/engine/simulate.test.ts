@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createGameReducer, getSpendOptions, startGame } from "@/lib/engine";
+import { canSell, createGameReducer, getSpendOptions, startGame } from "@/lib/engine";
 import { recomputePickability } from "@/lib/engine/board";
 import { isAmountAllowed } from "@/lib/engine/spend";
 import {
@@ -25,6 +25,8 @@ const configs: { name: string; config: GameConfig }[] = [
   { name: "Focus", config: sampleConfigFocus },
   { name: "One stock for ten rounds", config: { ...sampleConfigActive, stocksPerRound: 1 } },
   { name: "Ten stocks from one industry", config: { ...sampleConfigFocus, stocksPerRound: 10 } },
+  { name: "Indefinite unrestricted selling", config: { ...sampleConfigActive, holdYears: "indefinite" } },
+  { name: "Same-industry replacements", config: { ...sampleConfigSwap, boardDistribution: "sameIndustry" } },
 ];
 
 const seedRng = createRng(240024);
@@ -67,6 +69,13 @@ function checkState(state: GameState, actionsTaken: number, context: string) {
 
   const options = getSpendOptions(state);
   const pickableOnBoard = state.board.some((entry) => entry.pickable);
+  if (state.config.selling === "sameIndustry") {
+    expect(state.soldThisRound.length, context).toBeLessThanOrEqual(1);
+  }
+  if (state.mustReplaceIndustry !== null) {
+    expect(state.board.some((entry) => entry.pickable && entry.stock.industry === state.mustReplaceIndustry), context).toBe(true);
+    expect(options.canBuy, context).toBe(true);
+  }
   const availableStocks = market.stocks.filter((stock) =>
     !state.holdings.some((holding) => holding.ticker === stock.ticker) && !state.soldThisRound.includes(stock.ticker),
   );
@@ -91,6 +100,7 @@ function checkState(state: GameState, actionsTaken: number, context: string) {
 
 describe("full game simulations", () => {
   it.each(cases)("plays 200 complete games of $name", ({ name, config, seeds }) => {
+    let totalSales = 0;
     for (const seed of seeds) {
       // Actions have their own deterministic stream, so the config and game seed replay the whole game.
       const actionRng = createRng(deriveSeed(seed, 2404));
@@ -100,6 +110,34 @@ describe("full game simulations", () => {
 
       for (let actionsTaken = 1; actionsTaken <= config.rounds; actionsTaken += 1) {
         const roundContext = `${context}, action ${actionsTaken}`;
+        const boardTickers = state.board.map((entry) => entry.stock.ticker);
+        const saleAttempts = actionRng.int(0, 3);
+        let salesThisRound = 0;
+
+        for (let attempt = 0; attempt < saleAttempts; attempt += 1) {
+          const sellable = state.holdings.filter((holding) => canSell(state, holding, market).allowed);
+          if (sellable.length === 0) {
+            break;
+          }
+
+          const holding = actionRng.pick(sellable);
+          const next = reducer(state, { type: "SELL", holdingId: holding.id });
+          expect(next, roundContext).not.toBe(state);
+          expect(next.round, roundContext).toBe(state.round);
+          expect(next.soldThisRound, roundContext).toContain(holding.ticker);
+          salesThisRound += 1;
+          totalSales += 1;
+
+          if (config.selling === "any") {
+            expect(next.board.map((entry) => entry.stock.ticker), roundContext).toEqual(boardTickers);
+          } else {
+            expect(salesThisRound, roundContext).toBeLessThanOrEqual(1);
+          }
+
+          state = next;
+          checkState(state, actionsTaken - 1, `${roundContext}, sale ${salesThisRound}`);
+        }
+
         const options = getSpendOptions(state);
         const pickable = state.board.filter((entry) => entry.pickable);
         const shouldSkip = actionRng.next() < 0.2;
@@ -108,6 +146,7 @@ describe("full game simulations", () => {
         if (options.canBuy && pickable.length > 0 && (!shouldSkip || state.mustReplaceIndustry !== null)) {
           const stock = actionRng.pick(pickable).stock;
           const amount = randomAmount(options, actionRng);
+          expect(state.soldThisRound, roundContext).not.toContain(stock.ticker);
           expect(isAmountAllowed(options, amount), roundContext).toBe(true);
           action = { type: "BUY", ticker: stock.ticker, amount };
         } else {
@@ -123,6 +162,10 @@ describe("full game simulations", () => {
 
       expect(state.status, context).toBe("done");
       expect(reducer(state, { type: "SKIP" }), context).toBe(state);
+    }
+
+    if (config.selling !== "none") {
+      expect(totalSales).toBeGreaterThan(0);
     }
   });
 });

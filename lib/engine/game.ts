@@ -1,6 +1,7 @@
-import { drawBoard } from "@/lib/engine/board";
+import { drawBoard, recomputePickability } from "@/lib/engine/board";
+import { canSell } from "@/lib/engine/sell";
 import { getSpendOptions, isAmountAllowed } from "@/lib/engine/spend";
-import { createRng } from "@/lib/random";
+import { createRng, deriveSeed } from "@/lib/random";
 import type { GameAction, GameConfig, GameState, Holding, Market } from "@/lib/types";
 
 const roundToCents = (value: number) => Math.round(value * 100) / 100;
@@ -77,6 +78,59 @@ export function createGameReducer(market: Market): (state: GameState, action: Ga
 
     if (state.status !== "playing") {
       return state;
+    }
+
+    if (action.type === "SELL") {
+      const holding = state.holdings.find((candidate) => candidate.id === action.holdingId);
+
+      if (!holding || !canSell(state, holding, market).allowed) {
+        return state;
+      }
+
+      const value = getHoldingValue(holding, market, state.year);
+      const dollars = Math.round(value).toLocaleString("en-US");
+      const nextState: GameState = {
+        ...state,
+        cash: roundToCents(state.cash + value),
+        holdings: state.holdings.filter((candidate) => candidate.id !== holding.id),
+        soldThisRound: [...state.soldThisRound, holding.ticker],
+        mustReplaceIndustry: state.config.selling === "sameIndustry" ? holding.industry : null,
+        events: [...state.events, {
+          id: `sell-${holding.id}-${state.year}`,
+          kind: "sell",
+          message: `Sold ${holding.name} for $${dollars}.`,
+        }],
+      };
+
+      if (nextState.mustReplaceIndustry !== null && state.config.boardDistribution === "sameIndustry") {
+        const drawState = { ...nextState, seed: deriveSeed(state.seed, 2501) };
+        return { ...nextState, board: drawBoard(drawState, market) };
+      }
+
+      nextState.board = recomputePickability(nextState, state.board);
+      const replacementIndustry = nextState.mustReplaceIndustry;
+      if (replacementIndustry !== null && !nextState.board.some((entry) => entry.pickable && entry.stock.industry === replacementIndustry)) {
+        const candidates = market.stocks.filter((stock) =>
+          stock.industry === replacementIndustry &&
+          !nextState.holdings.some((owned) => owned.ticker === stock.ticker) &&
+          !nextState.soldThisRound.includes(stock.ticker),
+        );
+
+        if (candidates.length > 0) {
+          const rng = createRng(deriveSeed(deriveSeed(state.seed, state.round), 2502));
+          const stock = rng.pick(candidates);
+          const blockedIndex = nextState.board.findIndex((entry) => !entry.pickable);
+          const replaceIndex = blockedIndex >= 0 ? blockedIndex : Math.max(0, nextState.board.length - 1);
+          nextState.board[replaceIndex] = {
+            stock,
+            price: market.prices[stock.ticker][state.year],
+            pickable: true,
+            reason: null,
+          };
+        }
+      }
+
+      return nextState;
     }
 
     if (action.type === "BUY") {
