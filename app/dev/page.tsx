@@ -4,12 +4,19 @@ import { useState } from "react";
 
 import { RoundHeader } from "@/components/game/RoundHeader";
 import { StockBoard } from "@/components/game/StockBoard";
+import { formatMoney } from "@/components/game/format";
+import { SpendPanel } from "@/components/game/spend/SpendPanel";
 import {
   sampleStateBlocked,
   sampleStateMidGame,
   sampleStateReplace,
   sampleStateRound1,
   sampleStateSameIndustry,
+  sampleSpendBlocked,
+  sampleSpendEqual,
+  sampleSpendMinPlusFree,
+  sampleSpendRange,
+  sampleSpendSteps,
 } from "@/lib/fixtures";
 
 const accentColor = "#2563eb";
@@ -24,6 +31,9 @@ export default function DevPage() {
   };
   const handleSkip = () => {
     setLastAction("Skip tapped");
+  };
+  const handleBuy = (amount: number) => {
+    setLastAction(`Buy ${formatMoney(amount)} of Quantara Systems`);
   };
 
   return (
@@ -124,6 +134,73 @@ export default function DevPage() {
         onSelect={handleSelect}
         onSkip={handleSkip}
       />
+
+      <h2 className="mb-2 mt-8 text-lg font-semibold text-slate-900">SpendPanel</h2>
+      <p className="mb-4 text-sm text-slate-600">
+        Five spend controls, each wired to the Last action line above.
+      </p>
+
+      <div className="mb-6 space-y-8">
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">Equal</h3>
+          <SpendPanel
+            options={sampleSpendEqual}
+            companyName="Quantara Systems"
+            startingBudget={10000}
+            accentColor={accentColor}
+            sticky={false}
+            onBuy={handleBuy}
+          />
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">Range</h3>
+          <SpendPanel
+            options={sampleSpendRange}
+            companyName="Quantara Systems"
+            startingBudget={10000}
+            accentColor={accentColor}
+            sticky={false}
+            onBuy={handleBuy}
+          />
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">Steps</h3>
+          <SpendPanel
+            options={sampleSpendSteps}
+            companyName="Quantara Systems"
+            startingBudget={10000}
+            accentColor={accentColor}
+            sticky={false}
+            onBuy={handleBuy}
+          />
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">Min + Free</h3>
+          <SpendPanel
+            options={sampleSpendMinPlusFree}
+            companyName="Quantara Systems"
+            startingBudget={10000}
+            accentColor={accentColor}
+            sticky={false}
+            onBuy={handleBuy}
+          />
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">Blocked (cannot buy)</h3>
+          <SpendPanel
+            options={sampleSpendBlocked}
+            companyName="Quantara Systems"
+            startingBudget={10000}
+            accentColor={accentColor}
+            sticky={false}
+            onBuy={handleBuy}
+          />
+        </div>
+      </div>
     </main>
   );
 }
