@@ -131,7 +131,7 @@ describe("drawBoard board shapes", () => {
     for (const entry of board.filter((candidate) => candidate.stock.industry !== lastUnused)) {
       expect(entry).toMatchObject({
         pickable: false,
-        reason: `You already own a ${entry.stock.industry} stock.`,
+        reason: `You already own a stock in ${entry.stock.industry}.`,
       });
     }
   });
@@ -284,9 +284,16 @@ describe("recomputePickability", () => {
     const board = recomputePickability(state, boardOf(market, state.year, ["HE01", "HE02"]));
 
     expect(board).toEqual([
-      expect.objectContaining({ pickable: false, reason: "You already own a Healthcare stock." }),
-      expect.objectContaining({ pickable: false, reason: "You already own a Healthcare stock." }),
+      expect.objectContaining({ pickable: false, reason: "You already own a stock in Healthcare." }),
+      expect.objectContaining({ pickable: false, reason: "You already own a stock in Healthcare." }),
     ]);
+  });
+
+  it("words the owned-industry reason without an article, so Energy reads correctly", () => {
+    const state = stateWith({ holdings: [holdingForIndustry(market, "Energy")] });
+    const [entry] = recomputePickability(state, boardOf(market, state.year, ["EN01"]));
+
+    expect(entry.reason).toBe("You already own a stock in Energy.");
   });
 
   it("allows two stocks from one industry when picks are not one per industry", () => {
