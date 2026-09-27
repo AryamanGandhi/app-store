@@ -258,7 +258,7 @@ const holding = (id: string, ticker: string, yearBought: number, amountSpent: nu
   shares: roundToCents(amountSpent / getPrice(ticker, yearBought)),
 });
 
-const ownedIndustryReason = (industry: Industry) => `You already own a ${industry} stock.`;
+const ownedIndustryReason = (industry: Industry) => `You already own a stock in ${industry}.`;
 
 export const sampleStateRound1: GameState = {
   config: sampleConfigClassic,

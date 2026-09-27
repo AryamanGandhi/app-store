@@ -6,7 +6,7 @@ type Rng = ReturnType<typeof createRng>;
 
 const SOLD_REASON = "You sold this stock this round.";
 
-const ownedIndustryReason = (industry: Industry) => `You already own a ${industry} stock.`;
+const ownedIndustryReason = (industry: Industry) => `You already own a stock in ${industry}.`;
 
 const replaceIndustryReason = (industry: Industry) => `Replace your ${industry} stock first.`;
 
