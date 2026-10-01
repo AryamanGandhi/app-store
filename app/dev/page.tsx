@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import { GameOver } from "@/components/game/GameOver";
 import type { FinalHolding } from "@/components/game/GameOver";
@@ -71,6 +72,9 @@ export default function DevPage() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
+      <Link href="/dev/lab" className="mb-4 inline-block text-sm text-slate-600 underline">
+        Open the Mode Lab
+      </Link>
       <div className="mb-6 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
         Last action: {lastAction}
       </div>
