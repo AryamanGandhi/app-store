@@ -20,6 +20,15 @@ npm run build
 
 All four must pass on every PR.
 
+## Mode Lab
+
+```bash
+npm run lab
+npm run lab -- --games=5000 --seed=7
+```
+
+Simple bots play every preset mode on the same seeds and the script prints how the rules treated them: buys, skips, rounds with nothing buyable, blocked cards, sales, auto-sells, cash left idle at the end, the spread of final values, and any stuck games. The bots live in `lib/lab/strategies.ts`. This is a developer tool; nothing in it is shown to players.
+
 ## Folder ownership
 
 - Kenny: `app/` (except `app/dev`), `components/store/`, `lib/data/`
