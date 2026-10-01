@@ -15,8 +15,16 @@ const DEFAULT_SEED = 2024;
 type Progress = { done: number; total: number };
 type Summary = { games: number; seconds: number; seed: number };
 
-// Waiting a tick between rows lets the browser paint progress instead of freezing until every game is done.
-const nextTick = () => new Promise((resolve) => setTimeout(resolve, 0));
+// Yielding between rows lets the browser paint progress. A message, not setTimeout: Chrome slows
+// chained timers to about one a second in background windows, which turned a 1s run into 13s.
+const nextTick = () => new Promise<void>((resolve) => {
+  const channel = new MessageChannel();
+  channel.port1.onmessage = () => {
+    channel.port1.close();
+    resolve();
+  };
+  channel.port2.postMessage(null);
+});
 
 export function ModeLab() {
   const [games, setGames] = useState(1000);
