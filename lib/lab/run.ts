@@ -129,16 +129,24 @@ export function summarize(mode: string, strategy: string, records: GameRecord[])
 }
 
 // Every bot plays the same seeds in a mode, so differences between rows come from the bots, not luck of the draw.
+export function gameSeedsForMode(labSeed: number, modeIndex: number, games: number): number[] {
+  const seedRng = createRng(deriveSeed(labSeed, modeIndex + 1));
+  return Array.from({ length: games }, () => seedRng.int(1, 2147483647));
+}
+
+export function runLabRow(mode: LabMode, strategy: Strategy, market: Market, seeds: number[]): LabRow {
+  const records = seeds.map((seed) => playGame(mode.config, market, strategy, seed));
+  return summarize(mode.name, strategy.name, records);
+}
+
 export function runLab(options: { modes: LabMode[]; strategies: Strategy[]; market: Market; games: number; seed: number }): LabRow[] {
   const rows: LabRow[] = [];
 
   for (const [modeIndex, mode] of options.modes.entries()) {
-    const seedRng = createRng(deriveSeed(options.seed, modeIndex + 1));
-    const seeds = Array.from({ length: options.games }, () => seedRng.int(1, 2147483647));
+    const seeds = gameSeedsForMode(options.seed, modeIndex, options.games);
 
     for (const strategy of options.strategies) {
-      const records = seeds.map((seed) => playGame(mode.config, options.market, strategy, seed));
-      rows.push(summarize(mode.name, strategy.name, records));
+      rows.push(runLabRow(mode, strategy, options.market, seeds));
     }
   }
 
