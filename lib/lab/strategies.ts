@@ -1,6 +1,6 @@
 import { canSell, getSpendOptions } from "@/lib/engine";
 import type { createRng } from "@/lib/random";
-import type { GameAction, GameState, Market, SpendOptions } from "@/lib/types";
+import type { GameAction, GameState, Market, SpendOptions, Stock } from "@/lib/types";
 
 export type Rng = ReturnType<typeof createRng>;
 
@@ -39,10 +39,15 @@ function randomAmount(options: SpendOptions, rng: Rng): number {
   return rng.int(Math.round(options.min * 100), Math.round(options.max * 100)) / 100;
 }
 
-// Buys a random pickable stock when the rules allow it, otherwise skips.
-function buyOrSkip(state: GameState, rng: Rng, chooseAmount: (options: SpendOptions) => number): GameAction {
+// Buys a random pickable stock the bot wants when the rules allow it, otherwise skips.
+function buyOrSkip(
+  state: GameState,
+  rng: Rng,
+  chooseAmount: (options: SpendOptions) => number,
+  wants: (stock: Stock) => boolean = () => true,
+): GameAction {
   const options = getSpendOptions(state);
-  const pickable = state.board.filter((entry) => entry.pickable);
+  const pickable = state.board.filter((entry) => entry.pickable && wants(entry.stock));
 
   if (!options.canBuy || pickable.length === 0) {
     return { type: "SKIP" };
@@ -86,4 +91,26 @@ export const pennyPincher: Strategy = {
   },
 };
 
-export const STRATEGIES: Strategy[] = [randomPlayer, bigSpender, pennyPincher];
+export const loyalist: Strategy = {
+  name: "Loyalist",
+  description: "Only buys from the industry of its oldest stock, at the largest allowed amount, and skips otherwise. Never sells.",
+  chooseAction(state, _market, rng) {
+    const oldest = [...state.holdings].sort((a, b) => a.yearBought - b.yearBought)[0];
+    return buyOrSkip(state, rng, largestAmount, (stock) => !oldest || stock.industry === oldest.industry);
+  },
+};
+
+export const churner: Strategy = {
+  name: "Churner",
+  description: "Sells every stock the rules let it each round, then buys at the largest allowed amount.",
+  chooseAction(state, market, rng) {
+    const sellable = state.holdings.find((holding) => canSell(state, holding, market).allowed);
+    if (sellable) {
+      return { type: "SELL", holdingId: sellable.id };
+    }
+
+    return buyOrSkip(state, rng, largestAmount);
+  },
+};
+
+export const STRATEGIES: Strategy[] = [randomPlayer, bigSpender, pennyPincher, loyalist, churner];
