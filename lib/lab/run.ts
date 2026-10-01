@@ -82,6 +82,9 @@ export function playGame(config: GameConfig, market: Market, strategy: Strategy,
     } else {
       record.buys += action.type === "BUY" ? 1 : 0;
       record.skips += action.type === "SKIP" ? 1 : 0;
+    }
+    // Auto-sells only happen as a new round starts. The finished game keeps the last round's events, so don't recount them.
+    if (next.round !== state.round) {
       record.autoSells += next.events.filter((event) => event.kind === "autoSell").length;
     }
     state = next;

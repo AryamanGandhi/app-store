@@ -57,6 +57,14 @@ describe("playGame", () => {
     expect(record.idleCash).toBe(10000 - 6 * 500);
   });
 
+  it("counts an auto-sell from the final round once, not again when the game ends", () => {
+    // Focus: 8 rounds, 5-year hold. Buys from rounds 1-3 sell as rounds 6-8 start; round 4 onward never sells.
+    const record = playGame(sampleConfigFocus, market, bigSpender, 42);
+
+    expect(record.buys).toBe(8);
+    expect(record.autoSells).toBe(3);
+  });
+
   it("records sales and auto-sells when the rules allow them", () => {
     const records = [1, 2, 3, 4, 5].map((seed) => playGame(sampleConfigActive, market, randomPlayer, seed));
 
