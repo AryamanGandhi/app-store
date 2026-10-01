@@ -28,7 +28,8 @@ describe("ModeLab", () => {
   it("plays every mode and shows the same numbers as the script", async () => {
     await runWith("100", "7");
 
-    await waitFor(() => expect(screen.getByText(/1,800 games in/)).toBeInTheDocument());
+    // 1,800 real games take about a second locally and longer on CI, past waitFor's 1s default.
+    await waitFor(() => expect(screen.getByText(/1,800 games in/)).toBeInTheDocument(), { timeout: 10000 });
     expect(screen.getAllByRole("table")).toHaveLength(PRESET_MODES.length);
 
     const expected = runLab({
@@ -46,7 +47,7 @@ describe("ModeLab", () => {
       const cells = within(row).getAllByRole("cell").map((cell) => cell.textContent);
       expect(cells).toEqual(LAB_COLUMNS.map((column) => column.cell(expected[index])));
     });
-  });
+  }, 20000);
 
   it("rejects a seed that isn't a whole number and runs nothing", async () => {
     await runWith("100", "abc");
