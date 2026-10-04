@@ -113,4 +113,31 @@ export const churner: Strategy = {
   },
 };
 
-export const STRATEGIES: Strategy[] = [randomPlayer, bigSpender, pennyPincher, loyalist, churner];
+// The year a stock bought now gets valued: when its hold ends, or the last round's year if that comes first.
+export function exitYear(state: GameState): number {
+  const lastYear = state.startYear + state.config.rounds - 1;
+  const holdYears = state.config.holdYears;
+
+  return holdYears === "indefinite" ? lastYear : Math.min(state.year + holdYears, lastYear);
+}
+
+export const hindsight: Strategy = {
+  name: "Hindsight",
+  description: "Cheats by reading future prices. Buys the stock that gains the most by the time it's sold, at the largest allowed amount, and skips when every stock would lose money. Never sells.",
+  chooseAction(state, market) {
+    const options = getSpendOptions(state);
+    const sellYear = exitYear(state);
+    const growth = (stock: Stock) => market.prices[stock.ticker][sellYear] / market.prices[stock.ticker][state.year];
+    const best = state.board
+      .filter((entry) => entry.pickable)
+      .sort((a, b) => growth(b.stock) - growth(a.stock))[0];
+
+    if (!options.canBuy || !best || growth(best.stock) <= 1) {
+      return { type: "SKIP" };
+    }
+
+    return { type: "BUY", ticker: best.stock.ticker, amount: largestAmount(options) };
+  },
+};
+
+export const STRATEGIES: Strategy[] = [randomPlayer, bigSpender, pennyPincher, loyalist, churner, hindsight];
