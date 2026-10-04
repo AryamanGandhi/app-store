@@ -29,6 +29,13 @@ npm run lab -- --games=5000 --seed=7
 
 Simple bots play every preset mode on the same seeds and the script prints how the rules treated them: buys, skips, rounds with nothing buyable, blocked cards, sales, auto-sells, cash left idle at the end, the spread of final values, and any stuck games. The bots live in `lib/lab/strategies.ts`. This is a developer tool; nothing in it is shown to players.
 
+```bash
+npm run lab:seeds
+npm run lab:seeds -- --seeds=20 --games=1000 --seed=2024
+```
+
+Runs the same lab on several seeds in a row (2024, 2025, ...) and prints, for each mode and bot, the lowest and highest median final value and idle cash across those seeds. Use it to check whether a difference between two rows is bigger than what changing the seed alone does.
+
 ## Folder ownership
 
 - Kenny: `app/` (except `app/dev`), `components/store/`, `lib/data/`
