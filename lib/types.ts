@@ -38,6 +38,8 @@ export type GameConfig = {
   allocation: AllocationRule;
   selling: SellingRule;
   startingBudget: number;
+  // Lab experiment, off unless set: with same-industry selling, buying the replacement doesn't use the round's pick.
+  swapKeepsPick?: boolean;
 };
 export type Mode = {
   slug: string;

@@ -290,6 +290,12 @@ export function validateConfig(config: GameConfig): ConfigCheckResult {
     });
   }
 
+  if (raw.swapKeepsPick !== undefined && typeof raw.swapKeepsPick !== "boolean") {
+    errors.push({ field: "swapKeepsPick", message: "Keeping the pick on a swap must be on or off." });
+  } else if (raw.swapKeepsPick === true && selling !== "sameIndustry") {
+    errors.push({ field: "swapKeepsPick", message: "Keeping the pick on a swap needs same-industry selling." });
+  }
+
   if (selling === "sameIndustry" && stocksPerRound === 1) {
     warnings.push({ field: "selling", message: "Replacement rounds will only offer one stock." });
   }
@@ -307,5 +313,6 @@ export function describeConfig(config: GameConfig): string[] {
     describeAllocation(readAllocation(raw.allocation), raw.startingBudget, raw.rounds),
     describeHold(raw.holdYears),
     describeSelling(raw.selling),
+    ...(raw.swapKeepsPick === true ? ["Buying a replacement doesn't use your pick for the round."] : []),
   ];
 }

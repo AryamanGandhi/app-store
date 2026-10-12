@@ -2,7 +2,7 @@ import { drawBoard, recomputePickability } from "@/lib/engine/board";
 import { canSell } from "@/lib/engine/sell";
 import { getSpendOptions, isAmountAllowed } from "@/lib/engine/spend";
 import { createRng, deriveSeed } from "@/lib/random";
-import type { GameAction, GameConfig, GameState, Holding, Market } from "@/lib/types";
+import type { BoardEntry, GameAction, GameConfig, GameState, Holding, Market } from "@/lib/types";
 
 const roundToCents = (value: number) => Math.round(value * 100) / 100;
 
@@ -68,6 +68,14 @@ function endRound(state: GameState, market: Market): GameState {
   }
 
   return { ...nextState, board: drawBoard(nextState, market) };
+}
+
+// With swapKeepsPick the round goes on after a replacement, so the player still gets the normal pick.
+function boardAfterReplacement(state: GameState, board: BoardEntry[], boughtTicker: string, market: Market): BoardEntry[] {
+  const nextBoard = state.config.boardDistribution === "sameIndustry" ? drawBoard(state, market) : recomputePickability(state, board);
+
+  return nextBoard.map((entry) =>
+    entry.stock.ticker === boughtTicker ? { ...entry, pickable: false, reason: "You just bought this stock." } : entry);
 }
 
 export function createGameReducer(market: Market): (state: GameState, action: GameAction) => GameState {
@@ -149,12 +157,18 @@ export function createGameReducer(market: Market): (state: GameState, action: Ga
         shares: amount / market.prices[entry.stock.ticker][state.year],
       };
 
-      return endRound({
+      const afterBuy: GameState = {
         ...state,
         cash: roundToCents(state.cash - amount),
         holdings: [...state.holdings, holding],
         mustReplaceIndustry: null,
-      }, market);
+      };
+
+      if (state.mustReplaceIndustry !== null && state.config.swapKeepsPick === true) {
+        return { ...afterBuy, board: boardAfterReplacement(afterBuy, state.board, holding.ticker, market) };
+      }
+
+      return endRound(afterBuy, market);
     }
 
     if (action.type === "SKIP" && state.mustReplaceIndustry === null) {

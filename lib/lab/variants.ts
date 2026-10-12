@@ -16,6 +16,12 @@ export const LAB_VARIANTS: LabVariant[] = [
     change: (config) => ({ ...config, selling: "none" }),
   },
   {
+    id: "swapKeepsPick",
+    baseSlug: "sector-swap",
+    name: "Sector Swap, swap keeps the pick",
+    change: (config) => ({ ...config, swapKeepsPick: true }),
+  },
+  {
     id: "classicAnyIndustry",
     baseSlug: "classic-draft",
     name: "Classic Draft, any industry",
