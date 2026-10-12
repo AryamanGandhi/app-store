@@ -139,6 +139,24 @@ export function runLabRow(mode: LabMode, strategy: Strategy, market: Market, see
   return summarize(mode.name, strategy.name, records);
 }
 
+// The variant replays its base mode's seeds. Seeds from its own list position would mix luck into the rule's effect.
+export function runComparison(options: {
+  base: LabMode;
+  variant: LabMode;
+  baseModeIndex: number;
+  strategies: Strategy[];
+  market: Market;
+  games: number;
+  seed: number;
+}): { base: LabRow[]; variant: LabRow[] } {
+  const seeds = gameSeedsForMode(options.seed, options.baseModeIndex, options.games);
+
+  return {
+    base: options.strategies.map((strategy) => runLabRow(options.base, strategy, options.market, seeds)),
+    variant: options.strategies.map((strategy) => runLabRow(options.variant, strategy, options.market, seeds)),
+  };
+}
+
 export function runLab(options: { modes: LabMode[]; strategies: Strategy[]; market: Market; games: number; seed: number }): LabRow[] {
   const rows: LabRow[] = [];
 

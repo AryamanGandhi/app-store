@@ -30,6 +30,13 @@ npm run lab -- --games=5000 --seed=7
 Simple bots play every preset mode on the same seeds and the script prints how the rules treated them: buys, skips, rounds with nothing buyable, blocked cards, sales, auto-sells, cash left idle at the end, the spread of final values, and any stuck games. The bots live in `lib/lab/strategies.ts`. This is a developer tool; nothing in it is shown to players.
 
 ```bash
+npm run lab -- --compare=sector-swap --variant=swapNoSelling
+npm run lab -- --compare=classic-draft --variant=classicAnyIndustry
+```
+
+Plays a preset and a variant of it with one rule changed, on the same games, and prints each bot's preset row, variant row and the change between them. The variants live in `lib/lab/variants.ts`. A variant always replays its preset's seeds, so the change comes from the rule and not from different boards.
+
+```bash
 npm run lab:seeds
 npm run lab:seeds -- --seeds=20 --games=1000 --seed=2024
 ```
