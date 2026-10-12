@@ -19,3 +19,28 @@ export const LAB_COLUMNS: { header: string; cell: (row: LabRow) => string }[] = 
 ];
 
 export const LAB_NOTE = "Averages are per game. Idle cash is cash not in any stock when the game ends.";
+
+const percent = (value: number) => `${Math.round(value)}%`;
+const toTenths = (value: number) => Math.round(value * 10) / 10;
+
+// Numeric columns for comparing a preset with a variant. Values are rounded as shown, so a change matches the cells above it.
+export const LAB_COMPARE_COLUMNS: { header: string; value: (row: LabRow) => number; format: (value: number) => string }[] = [
+  { header: "Buys", value: (row) => toTenths(row.avgBuys), format: oneDecimal },
+  { header: "Skips", value: (row) => toTenths(row.avgSkips), format: oneDecimal },
+  { header: "Blocked cards", value: (row) => Math.round(row.blockedCardShare * 100), format: percent },
+  { header: "Sales", value: (row) => toTenths(row.avgSales), format: oneDecimal },
+  { header: "Auto-sells", value: (row) => toTenths(row.avgAutoSells), format: oneDecimal },
+  { header: "Idle cash", value: (row) => Math.round(row.avgIdleCash), format: dollars },
+  { header: "Median final value", value: (row) => Math.round(row.finalValueMedian), format: dollars },
+  { header: "Stuck", value: (row) => row.stuckGames, format: String },
+];
+
+// A change is the variant minus the preset, with a sign unless it rounds to zero.
+export function formatChange(format: (value: number) => string, change: number): string {
+  const size = format(Math.abs(change));
+  if (size === format(0)) {
+    return size;
+  }
+
+  return `${change > 0 ? "+" : "-"}${size}`;
+}

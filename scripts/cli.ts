@@ -10,6 +10,12 @@ export function readNumberFlag(name: string, fallback: number): number {
   return value;
 }
 
+// Reads a text flag like --compare=sector-swap, or null when it isn't given.
+export function readTextFlag(name: string): string | null {
+  const flag = process.argv.find((arg) => arg.startsWith(`--${name}=`));
+  return flag ? flag.slice(name.length + 3) : null;
+}
+
 // Prints rows as a plain-text table with each column padded to its widest cell.
 export function printTable(headers: string[], rows: string[][]) {
   const widths = headers.map((header, index) => Math.max(header.length, ...rows.map((row) => row[index].length)));

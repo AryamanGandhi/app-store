@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { startGame } from "@/lib/engine";
-import { hasLegalAction, playGame, runLab } from "@/lib/lab/run";
+import { gameSeedsForMode, hasLegalAction, playGame, runComparison, runLab } from "@/lib/lab/run";
 import { bigSpender, pennyPincher, randomPlayer, STRATEGIES, type Strategy } from "@/lib/lab/strategies";
 import {
   createTestMarket,
@@ -90,5 +90,39 @@ describe("hasLegalAction", () => {
 
     expect(hasLegalAction(state, market)).toBe(true);
     expect(hasLegalAction(blocked, market)).toBe(false);
+  });
+});
+
+describe("runComparison", () => {
+  const swap = { name: "Swap", config: sampleConfigSwap };
+  const swapNoSelling = { name: "Swap, no selling", config: { ...sampleConfigSwap, selling: "none" as const } };
+
+  it("gives the preset the same rows a normal lab run gives it", () => {
+    const labRows = runLab({ modes, strategies: STRATEGIES, market, games: 30, seed: 9 }).filter((row) => row.mode === "Swap");
+    const { base } = runComparison({ base: swap, variant: swapNoSelling, baseModeIndex: 4, strategies: STRATEGIES, market, games: 30, seed: 9 });
+
+    expect(base).toEqual(labRows);
+  });
+
+  it("plays the variant on the same starting boards as the preset", () => {
+    const firstBoards: Record<string, string[][]> = { Swap: [], "Swap, no selling": [] };
+    const recordFirstBoard: Strategy = {
+      ...bigSpender,
+      chooseAction(state, gameMarket, rng) {
+        if (state.round === 1) {
+          firstBoards[state.config.selling === "none" ? "Swap, no selling" : "Swap"].push(state.board.map((entry) => entry.stock.ticker));
+        }
+        return bigSpender.chooseAction(state, gameMarket, rng);
+      },
+    };
+
+    runComparison({ base: swap, variant: swapNoSelling, baseModeIndex: 4, strategies: [recordFirstBoard], market, games: 30, seed: 9 });
+
+    expect(firstBoards.Swap).toHaveLength(30);
+    expect(firstBoards["Swap, no selling"]).toEqual(firstBoards.Swap);
+  });
+
+  it("would give a mode added to the end of the list different games", () => {
+    expect(gameSeedsForMode(9, modes.length, 30)).not.toEqual(gameSeedsForMode(9, 4, 30));
   });
 });
