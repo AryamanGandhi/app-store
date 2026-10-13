@@ -64,6 +64,45 @@ describe("swapKeepsPick", () => {
   });
 });
 
+describe("swapKeepsPick edge cases", () => {
+  it("swaps a pickable stock onto a one-card board after the replacement uses that card", () => {
+    const config: GameConfig = { ...sampleConfigSwap, stocksPerRound: 1, boardDistribution: "any", swapKeepsPick: true };
+    const afterReplacement = buyFirstPickable(sellInRoundTwo(config));
+
+    expect(afterReplacement.round).toBe(2);
+    expect(afterReplacement.board.filter((entry) => entry.pickable)).toHaveLength(1);
+
+    const afterPick = buyFirstPickable(afterReplacement);
+    expect(afterPick.round).toBe(3);
+    expect(afterPick.holdings).toHaveLength(2);
+  });
+
+  it("splits the last round's cash across the replacement and the kept pick with an equal split", () => {
+    const config: GameConfig = { ...sampleConfigSwap, allocation: { kind: "equal" }, swapKeepsPick: true };
+    const buyEqual = (state: GameState) => {
+      const entry = state.board.find((candidate) => candidate.pickable)!;
+      return reducer(state, { type: "BUY", ticker: entry.stock.ticker, amount: getSpendOptions(state).fixedAmount! });
+    };
+
+    let state = buyEqual(startGame(config, market, 42));
+    while (state.round < config.rounds) {
+      state = reducer(state, { type: "SKIP" });
+    }
+    state = reducer(state, { type: "SELL", holdingId: state.holdings[0].id });
+    const cashBeforeReplacement = state.cash;
+
+    expect(getSpendOptions(state).fixedAmount).toBe(Math.floor(cashBeforeReplacement * 100 / 2) / 100);
+
+    state = buyEqual(state);
+    expect(getSpendOptions(state).canBuy).toBe(true);
+
+    state = buyEqual(state);
+    expect(state.status).toBe("done");
+    expect(state.holdings).toHaveLength(2);
+    expect(state.cash).toBe(0);
+  });
+});
+
 describe("swapKeepsPick config checks", () => {
   it("accepts it only with same-industry selling", () => {
     expect(validateConfig({ ...sampleConfigSwap, swapKeepsPick: true }).errors).toEqual([]);

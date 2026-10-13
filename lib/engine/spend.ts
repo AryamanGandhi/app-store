@@ -15,7 +15,9 @@ const unavailableOptions = (kind: AllocationKind): SpendOptions => ({
 export function getSpendOptions(state: GameState): SpendOptions {
   const allocation = state.config.allocation;
   const kind = allocation.kind;
-  const picksLeft = state.config.rounds - state.round + 1;
+  // A replacement that keeps the pick still leaves this round's normal pick to pay for.
+  const keptPick = state.mustReplaceIndustry !== null && state.config.swapKeepsPick === true ? 1 : 0;
+  const picksLeft = state.config.rounds - state.round + 1 + keptPick;
 
   if (state.status === "done") {
     return unavailableOptions(kind);
