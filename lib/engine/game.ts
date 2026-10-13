@@ -2,7 +2,7 @@ import { drawBoard, recomputePickability } from "@/lib/engine/board";
 import { canSell } from "@/lib/engine/sell";
 import { getSpendOptions, isAmountAllowed } from "@/lib/engine/spend";
 import { createRng, deriveSeed } from "@/lib/random";
-import type { GameAction, GameConfig, GameState, Holding, Market } from "@/lib/types";
+import type { BoardEntry, GameAction, GameConfig, GameState, Holding, Market } from "@/lib/types";
 
 const roundToCents = (value: number) => Math.round(value * 100) / 100;
 
@@ -68,6 +68,35 @@ function endRound(state: GameState, market: Market): GameState {
   }
 
   return { ...nextState, board: drawBoard(nextState, market) };
+}
+
+// With swapKeepsPick the round goes on after a replacement, so the player still gets the normal pick.
+function boardAfterReplacement(state: GameState, board: BoardEntry[], boughtTicker: string, market: Market): BoardEntry[] {
+  const redrawn = state.config.boardDistribution === "sameIndustry" ? drawBoard(state, market) : recomputePickability(state, board);
+  const nextBoard = redrawn.map((entry) =>
+    entry.stock.ticker === boughtTicker ? { ...entry, pickable: false, reason: "You just bought this stock." } : entry);
+
+  if (nextBoard.some((entry) => entry.pickable)) {
+    return nextBoard;
+  }
+
+  // Like a normal draw, swap in a pickable stock when the board has none left, for example a one-card board.
+  const onBoard = nextBoard.map((entry) => entry.stock.ticker);
+  const candidates = recomputePickability(state, market.stocks
+    .filter((stock) => !onBoard.includes(stock.ticker) && !state.holdings.some((owned) => owned.ticker === stock.ticker))
+    .map((stock) => ({ stock, price: market.prices[stock.ticker][state.year], pickable: true, reason: null })),
+  ).filter((entry) => entry.pickable);
+
+  if (candidates.length === 0) {
+    return nextBoard;
+  }
+
+  const rng = createRng(deriveSeed(deriveSeed(state.seed, state.round), 2503));
+  const boughtIndex = nextBoard.findIndex((entry) => entry.stock.ticker === boughtTicker);
+  const replaceIndex = boughtIndex >= 0 ? boughtIndex : nextBoard.length;
+  const withPick = [...nextBoard];
+  withPick[replaceIndex] = rng.pick(candidates);
+  return withPick;
 }
 
 export function createGameReducer(market: Market): (state: GameState, action: GameAction) => GameState {
@@ -149,12 +178,18 @@ export function createGameReducer(market: Market): (state: GameState, action: Ga
         shares: amount / market.prices[entry.stock.ticker][state.year],
       };
 
-      return endRound({
+      const afterBuy: GameState = {
         ...state,
         cash: roundToCents(state.cash - amount),
         holdings: [...state.holdings, holding],
         mustReplaceIndustry: null,
-      }, market);
+      };
+
+      if (state.mustReplaceIndustry !== null && state.config.swapKeepsPick === true) {
+        return { ...afterBuy, board: boardAfterReplacement(afterBuy, state.board, holding.ticker, market) };
+      }
+
+      return endRound(afterBuy, market);
     }
 
     if (action.type === "SKIP" && state.mustReplaceIndustry === null) {
