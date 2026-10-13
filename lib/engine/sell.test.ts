@@ -141,7 +141,7 @@ describe("SELL", () => {
     expect(next.holdings).toEqual([]);
     expect(next.soldThisRound).toEqual([stock.ticker]);
     expect(next.events).toEqual([{
-      id: expect.any(String), kind: "sell", message: `Sold ${stock.name} for $1,840.`,
+      id: expect.any(String), kind: "sell", holdingName: stock.name, amount: 1840.49,
     }]);
     expect(next.round).toBe(state.round);
     expect(next.year).toBe(state.year);

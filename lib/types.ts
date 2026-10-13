@@ -60,7 +60,8 @@ export type Holding = {
   amountSpent: number;
   shares: number;
 };
-export type GameEvent = { id: string; kind: "autoSell" | "sell"; message: string };
+// The engine records what happened; the UI words it and formats the amount.
+export type GameEvent = { id: string; kind: "autoSell" | "sell"; holdingName: string; amount: number };
 export type GameStatus = "playing" | "done";
 export type GameState = {
   config: GameConfig;

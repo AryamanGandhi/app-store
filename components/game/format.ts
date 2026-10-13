@@ -1,3 +1,5 @@
+import type { GameEvent } from "@/lib/types";
+
 // Shared money and percent formatters for the gameplay UI.
 // These are pure display helpers: they take already-computed numbers and
 // return localized strings. No game rules live here.
@@ -29,4 +31,11 @@ export function formatPercentChange(value: number, amountSpent: number): string 
     maximumFractionDigits: 1,
   });
   return `${sign}${formatted}%`;
+}
+
+export function formatEvent(event: GameEvent): string {
+  if (event.kind === "autoSell") {
+    return `${event.holdingName}'s hold ended, sold for ${formatMoney(event.amount)}.`;
+  }
+  return `Sold ${event.holdingName} for ${formatMoney(event.amount)}.`;
 }

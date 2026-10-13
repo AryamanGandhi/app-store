@@ -55,12 +55,12 @@ function endRound(state: GameState, market: Market): GameState {
 
     if (holdYears !== "indefinite" && nextState.year >= holding.yearBought + holdYears) {
       const value = getHoldingValue(holding, market, nextState.year);
-      const dollars = Math.round(value).toLocaleString("en-US");
       nextState.cash = roundToCents(nextState.cash + value);
       nextState.events.push({
         id: `autoSell-${holding.id}-${nextState.year}`,
         kind: "autoSell",
-        message: `${holding.name}'s hold ended, sold for $${dollars}.`,
+        holdingName: holding.name,
+        amount: value,
       });
     } else {
       nextState.holdings.push(holding);
@@ -117,7 +117,6 @@ export function createGameReducer(market: Market): (state: GameState, action: Ga
       }
 
       const value = getHoldingValue(holding, market, state.year);
-      const dollars = Math.round(value).toLocaleString("en-US");
       const nextState: GameState = {
         ...state,
         cash: roundToCents(state.cash + value),
@@ -127,7 +126,8 @@ export function createGameReducer(market: Market): (state: GameState, action: Ga
         events: [...state.events, {
           id: `sell-${holding.id}-${state.year}`,
           kind: "sell",
-          message: `Sold ${holding.name} for $${dollars}.`,
+          holdingName: holding.name,
+          amount: value,
         }],
       };
 
