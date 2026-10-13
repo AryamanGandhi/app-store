@@ -290,7 +290,8 @@ export const sampleStateMidGame: GameState = {
     {
       id: "event-auto-sell-1",
       kind: "autoSell",
-      message: "A previous 2002 hold ended automatically this round, sold for $1,840.",
+      holdingName: "Quantara Systems",
+      amount: 1840.49,
     },
   ],
   status: "playing",
@@ -320,7 +321,8 @@ export const sampleStateReplace: GameState = {
     {
       id: "event-sell-1",
       kind: "sell",
-      message: "Orbaline Power was sold and must be replaced with another Energy stock.",
+      holdingName: "Orbaline Power",
+      amount: 1120.5,
     },
   ],
   status: "playing",

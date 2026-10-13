@@ -166,7 +166,7 @@ describe("SKIP and game completion", () => {
     const state: GameState = {
       ...startGame(sampleConfigClassic, sampleMarket, 42),
       soldThisRound: ["QNT"],
-      events: [{ id: "old", kind: "sell", message: "Previous sale." }],
+      events: [{ id: "old", kind: "sell", holdingName: "Previous sale", amount: 1 }],
     };
     const next = reducer(state, { type: "SKIP" });
     expect(next.round).toBe(2);
@@ -235,7 +235,8 @@ describe("holding values and automatic sales", () => {
     expect(state.events).toEqual([{
       id: expect.any(String),
       kind: "autoSell",
-      message: `${stock.name}'s hold ended, sold for $1,840.`,
+      holdingName: stock.name,
+      amount: 1840.49,
     }]);
     expect(state.soldThisRound).toEqual([]);
     expect(state.board.find((entry) => entry.stock.industry === stock.industry)?.pickable).toBe(true);
@@ -260,9 +261,9 @@ describe("holding values and automatic sales", () => {
 
     expect(next.cash).toBe(1840.1);
     expect(next.holdings).toEqual([state.holdings[2]]);
-    expect(next.events.map((event) => event.message)).toEqual([
-      `${state.holdings[0].name}'s hold ended, sold for $1,234.`,
-      `${state.holdings[1].name}'s hold ended, sold for $606.`,
+    expect(next.events.map((event) => [event.holdingName, event.amount])).toEqual([
+      [state.holdings[0].name, 1234.29],
+      [state.holdings[1].name, 605.71],
     ]);
     expect(new Set(next.events.map((event) => event.id)).size).toBe(2);
     expect(state).toEqual(before);

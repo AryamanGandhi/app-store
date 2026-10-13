@@ -1,5 +1,6 @@
 "use client";
 
+import { formatEvent } from "./format";
 import { StockCard } from "./StockCard";
 import type { BoardEntry, GameEvent } from "@/lib/types";
 
@@ -36,7 +37,7 @@ export function StockBoard({
         <ul className="mb-3 space-y-1" aria-label="Round events">
           {events.map((event) => (
             <li key={event.id} className="text-sm text-slate-600">
-              {event.message}
+              {formatEvent(event)}
             </li>
           ))}
         </ul>

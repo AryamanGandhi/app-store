@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 // multi-render test files don't accumulate DOM between tests.
 afterEach(cleanup);
 
+import { formatEvent } from "@/components/game/format";
 import { StockBoard } from "@/components/game/StockBoard";
 import {
   sampleStateBlocked,
@@ -66,7 +67,7 @@ describe("StockBoard", () => {
     );
 
     for (const event of sampleStateReplace.events) {
-      expect(screen.getByText(event.message)).toBeInTheDocument();
+      expect(screen.getByText(formatEvent(event))).toBeInTheDocument();
     }
   });
 

@@ -14,6 +14,7 @@ afterEach(cleanup);
 
 const classicMode = PRESET_MODES.find((mode) => mode.slug === "classic-draft")!;
 const oneShotMode = PRESET_MODES.find((mode) => mode.slug === "one-shot")!;
+const activeMode = PRESET_MODES.find((mode) => mode.slug === "active-trader")!;
 
 async function waitForGameStart(mode = classicMode) {
   render(<PlayGame config={mode.config} modeName={mode.name} accentColor={mode.accentColor} />);
@@ -55,6 +56,23 @@ describe("PlayGame", () => {
     await waitFor(() => {
       expect(screen.getByText(/Round 2 of 8 • Year /)).toBeInTheDocument();
     });
+  });
+
+  it("shows a sale with the same amount the sell prompt showed, cents included", async () => {
+    await waitForGameStart(activeMode);
+
+    const card = screen.getAllByRole("button", { pressed: false }).find((button) => button.textContent?.includes("$"));
+    fireEvent.click(card!);
+    fireEvent.click(screen.getByRole("button", { name: /Buy .* of /i }));
+    await waitFor(() => expect(screen.getByText(/Round 2 of 10/)).toBeInTheDocument());
+
+    const sellButton = screen.getByRole("button", { name: /^Sell / });
+    const holdingName = sellButton.getAttribute("aria-label")!.replace("Sell ", "");
+    fireEvent.click(sellButton);
+    const promptAmount = screen.getByText(/^Sell for \$/).textContent!.replace("Sell for ", "").replace("?", "");
+    fireEvent.click(screen.getByRole("button", { name: "Confirm" }));
+
+    expect(screen.getByText(`Sold ${holdingName} for ${promptAmount}.`)).toBeInTheDocument();
   });
 
   it("skipping advances to the next round", async () => {

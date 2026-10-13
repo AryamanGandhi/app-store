@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { formatMoney, formatPercentChange } from "@/components/game/format";
+import { formatEvent, formatMoney, formatPercentChange } from "@/components/game/format";
 
 describe("formatMoney", () => {
   it("formats whole dollars without cents", () => {
@@ -39,5 +39,17 @@ describe("formatPercentChange", () => {
 
   it("returns +0.0% when the amount spent is zero", () => {
     expect(formatPercentChange(5000, 0)).toBe("+0.0%");
+  });
+});
+
+describe("formatEvent", () => {
+  it("words an automatic sale with cents, the same way the rest of the screen shows money", () => {
+    expect(formatEvent({ id: "a", kind: "autoSell", holdingName: "Quantara Systems", amount: 1840.49 }))
+      .toBe("Quantara Systems's hold ended, sold for $1,840.49.");
+  });
+
+  it("words a sale and drops cents for a whole-dollar amount", () => {
+    expect(formatEvent({ id: "s", kind: "sell", holdingName: "Orbaline Power", amount: 1120 }))
+      .toBe("Sold Orbaline Power for $1,120.");
   });
 });
