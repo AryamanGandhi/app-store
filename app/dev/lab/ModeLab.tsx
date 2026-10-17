@@ -5,8 +5,9 @@ import Link from "next/link";
 
 import { fakeMarket } from "@/lib/data/market";
 import { PRESET_MODES } from "@/lib/data/modes";
-import { LAB_COLUMNS, LAB_NOTE, SKILL_COLUMNS, SKILL_NOTE } from "@/lib/lab/columns";
+import { LAB_COLUMNS, LAB_NOTE, sameMovesLine, SKILL_COLUMNS, SKILL_NOTE } from "@/lib/lab/columns";
 import { gameSeedsForMode, runLabRow, type LabRow } from "@/lib/lab/run";
+import { sameMoveGroups } from "@/lib/lab/same-moves";
 import { roomForSkill } from "@/lib/lab/skill";
 import { STRATEGIES } from "@/lib/lab/strategies";
 
@@ -157,6 +158,8 @@ export function ModeLab() {
         if (modeRows.length === 0) {
           return null;
         }
+        // A mode still running might gain a matching bot later, so lines only show once all its bots are in.
+        const sameMoves = modeRows.length === STRATEGIES.length ? sameMoveGroups(modeRows) : [];
 
         return (
           <section key={mode.slug} className="mb-8">
@@ -185,6 +188,11 @@ export function ModeLab() {
                 </tbody>
               </table>
             </div>
+            {sameMoves.map((group) => (
+              <p key={group.bots.join()} className="mt-2 text-sm text-slate-600" data-testid="same-moves">
+                {sameMovesLine(group.bots, modeRows[0].games)}
+              </p>
+            ))}
           </section>
         );
       })}

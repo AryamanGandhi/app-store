@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { startGame } from "@/lib/engine";
-import { gameSeedsForMode, hasLegalAction, playGame, runComparison, runLab } from "@/lib/lab/run";
+import { gameSeedsForMode, hasLegalAction, moveEntry, playGame, runComparison, runLab, summarize, type GameRecord } from "@/lib/lab/run";
 import { bigSpender, pennyPincher, randomPlayer, STRATEGIES, type Strategy } from "@/lib/lab/strategies";
 import {
   createTestMarket,
@@ -124,5 +124,51 @@ describe("runComparison", () => {
 
   it("would give a mode added to the end of the list different games", () => {
     expect(gameSeedsForMode(9, modes.length, 30)).not.toEqual(gameSeedsForMode(9, 4, 30));
+  });
+});
+
+describe("move logs", () => {
+  it("records every move in order: buys in whole cents, sells by holding id, skips as K", () => {
+    let boughtTicker = "";
+    let soldId = "";
+    const scripted: Strategy = {
+      name: "Scripted",
+      description: "",
+      chooseAction(state) {
+        if (state.round === 1) {
+          boughtTicker = state.board.find((entry) => entry.pickable)!.stock.ticker;
+          return { type: "BUY", ticker: boughtTicker, amount: 1000.5 };
+        }
+        if (state.round === 2 && state.holdings.length > 0) {
+          soldId = state.holdings[0].id;
+          return { type: "SELL", holdingId: soldId };
+        }
+        return { type: "SKIP" };
+      },
+    };
+    const record = playGame(sampleConfigActive, market, scripted, 42);
+
+    expect(record.moves).toBe([`B:${boughtTicker}:100050`, `S:${soldId}`, ...Array(sampleConfigActive.rounds - 1).fill("K")].join(","));
+  });
+
+  it("writes amounts as whole cents so equal amounts match and different ones don't", () => {
+    const buy = (amount: number) => moveEntry({ type: "BUY", ticker: "QNT", amount });
+
+    expect(buy(1250.005)).toBe(buy(1250.01));
+    expect(buy(1250.0)).not.toBe(buy(1250.01));
+  });
+
+  it("refuses to log a restart instead of recording it as a skip", () => {
+    expect(() => moveEntry({ type: "RESTART", seed: 1 })).toThrow("A bot can't restart the game.");
+  });
+
+  it("joins move logs in seed order, so swapping two games changes the key", () => {
+    const record = (moves: string): GameRecord => ({
+      buys: 0, skips: 0, sales: 0, autoSells: 0, roundsWithNoBuy: 0, cardsShown: 0, cardsBlocked: 0,
+      idleCash: 0, finalValue: 0, stuck: false, moves,
+    });
+
+    expect(summarize("M", "Bot", [record("K"), record("B:QNT:100")]).movesKey).toBe("K\nB:QNT:100");
+    expect(summarize("M", "Bot", [record("B:QNT:100"), record("K")]).movesKey).toBe("B:QNT:100\nK");
   });
 });

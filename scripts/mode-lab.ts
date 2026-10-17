@@ -3,8 +3,9 @@
 // Compare a preset with one rule changed: npm run lab -- --compare=sector-swap --variant=swapNoSelling
 import { fakeMarket } from "@/lib/data/market";
 import { PRESET_MODES } from "@/lib/data/modes";
-import { formatChange, LAB_COLUMNS, LAB_COMPARE_COLUMNS, LAB_NOTE, SKILL_COLUMNS, SKILL_NOTE } from "@/lib/lab/columns";
+import { formatChange, LAB_COLUMNS, LAB_COMPARE_COLUMNS, LAB_NOTE, sameMovesLine, SKILL_COLUMNS, SKILL_NOTE } from "@/lib/lab/columns";
 import { runComparison, runLab } from "@/lib/lab/run";
+import { sameMoveGroups } from "@/lib/lab/same-moves";
 import { roomForSkill } from "@/lib/lab/skill";
 import { STRATEGIES } from "@/lib/lab/strategies";
 import { getVariant, LAB_VARIANTS } from "@/lib/lab/variants";
@@ -31,6 +32,9 @@ function printReport() {
     console.log(`\n${mode.name} (${games.toLocaleString("en-US")} games per bot)`);
     const modeRows = rows.filter((row) => row.mode === mode.name);
     printTable(LAB_COLUMNS.map((column) => column.header), modeRows.map((row) => LAB_COLUMNS.map((column) => column.cell(row))));
+    for (const group of sameMoveGroups(modeRows)) {
+      console.log(sameMovesLine(group.bots, games));
+    }
   }
 
   const skillRows = roomForSkill(rows, STRATEGIES);
