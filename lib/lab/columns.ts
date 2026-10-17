@@ -1,4 +1,5 @@
 import type { LabRow } from "@/lib/lab/run";
+import type { SkillRow } from "@/lib/lab/skill";
 
 const dollars = (value: number) => `$${Math.round(value).toLocaleString("en-US")}`;
 const oneDecimal = (value: number) => value.toFixed(1);
@@ -19,6 +20,17 @@ export const LAB_COLUMNS: { header: string; cell: (row: LabRow) => string }[] = 
 ];
 
 export const LAB_NOTE = "Averages are per game. Idle cash is cash not in any stock when the game ends.";
+
+// Shared by the npm script and the /dev/lab page so both print the same Room for skill table.
+export const SKILL_COLUMNS: { header: string; cell: (row: SkillRow) => string }[] = [
+  { header: "Mode", cell: (row) => row.mode },
+  { header: "Best honest bot", cell: (row) => row.bestBots.join(", ") },
+  { header: "Best honest median", cell: (row) => dollars(row.bestHonest) },
+  { header: "Hindsight median", cell: (row) => dollars(row.ceiling) },
+  { header: "Room for skill", cell: (row) => formatChange(dollars, row.gap) },
+];
+
+export const SKILL_NOTE = "Room for skill is Hindsight's median minus the best honest bot's median. Hindsight reads future prices, so it marks the best result a mode allows, not a real player. Prices come from the sandbox's fake market.";
 
 const percent = (value: number) => `${Math.round(value)}%`;
 const toTenths = (value: number) => Math.round(value * 10) / 10;

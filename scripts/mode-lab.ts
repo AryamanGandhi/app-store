@@ -3,8 +3,9 @@
 // Compare a preset with one rule changed: npm run lab -- --compare=sector-swap --variant=swapNoSelling
 import { fakeMarket } from "@/lib/data/market";
 import { PRESET_MODES } from "@/lib/data/modes";
-import { formatChange, LAB_COLUMNS, LAB_COMPARE_COLUMNS, LAB_NOTE } from "@/lib/lab/columns";
+import { formatChange, LAB_COLUMNS, LAB_COMPARE_COLUMNS, LAB_NOTE, SKILL_COLUMNS, SKILL_NOTE } from "@/lib/lab/columns";
 import { runComparison, runLab } from "@/lib/lab/run";
+import { roomForSkill } from "@/lib/lab/skill";
 import { STRATEGIES } from "@/lib/lab/strategies";
 import { getVariant, LAB_VARIANTS } from "@/lib/lab/variants";
 import { printTable, readNumberFlag, readTextFlag } from "./cli";
@@ -30,6 +31,13 @@ function printReport() {
     console.log(`\n${mode.name} (${games.toLocaleString("en-US")} games per bot)`);
     const modeRows = rows.filter((row) => row.mode === mode.name);
     printTable(LAB_COLUMNS.map((column) => column.header), modeRows.map((row) => LAB_COLUMNS.map((column) => column.cell(row))));
+  }
+
+  const skillRows = roomForSkill(rows, STRATEGIES);
+  if (skillRows.length > 0) {
+    console.log("\nRoom for skill (medians over the same games)");
+    printTable(SKILL_COLUMNS.map((column) => column.header), skillRows.map((row) => SKILL_COLUMNS.map((column) => column.cell(row))));
+    console.log(SKILL_NOTE);
   }
 
   return rows.length * games;

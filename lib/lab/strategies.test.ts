@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { playGame } from "@/lib/lab/run";
-import { churner, exitYear, hindsight, loyalist, type Strategy } from "@/lib/lab/strategies";
+import { churner, exitYear, hindsight, loyalist, STRATEGIES, type Strategy } from "@/lib/lab/strategies";
 import { startGame } from "@/lib/engine";
 import {
   createTestMarket,
@@ -109,5 +109,11 @@ describe("hindsight", () => {
 
     expect(record.buys).toBe(0);
     expect(record.finalValue).toBe(10000);
+  });
+});
+
+describe("readsFuture", () => {
+  it("is set on Hindsight and on no other bot", () => {
+    expect(STRATEGIES.filter((strategy) => strategy.readsFuture === true)).toEqual([hindsight]);
   });
 });
