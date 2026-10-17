@@ -28,8 +28,9 @@ describe("ModeLab", () => {
   it("plays every mode and shows the same numbers as the script", async () => {
     await runWith("100", "7");
 
-    // 3,000 real games take about a second locally and longer on CI, past waitFor's 1s default.
-    await waitFor(() => expect(screen.getByText(/3,000 games in/)).toBeInTheDocument(), { timeout: 10000 });
+    // A few thousand real games take about a second locally and longer on CI, past waitFor's 1s default.
+    const totalGames = (100 * PRESET_MODES.length * STRATEGIES.length).toLocaleString("en-US");
+    await waitFor(() => expect(screen.getByText(new RegExp(`${totalGames} games in`))).toBeInTheDocument(), { timeout: 10000 });
     expect(screen.getAllByRole("table")).toHaveLength(PRESET_MODES.length);
 
     const expected = runLab({
