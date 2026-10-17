@@ -5,8 +5,9 @@ import Link from "next/link";
 
 import { fakeMarket } from "@/lib/data/market";
 import { PRESET_MODES } from "@/lib/data/modes";
-import { LAB_COLUMNS, LAB_NOTE } from "@/lib/lab/columns";
+import { LAB_COLUMNS, LAB_NOTE, SKILL_COLUMNS, SKILL_NOTE } from "@/lib/lab/columns";
 import { gameSeedsForMode, runLabRow, type LabRow } from "@/lib/lab/run";
+import { roomForSkill } from "@/lib/lab/skill";
 import { STRATEGIES } from "@/lib/lab/strategies";
 
 const GAME_COUNTS = [100, 1000, 5000];
@@ -80,6 +81,8 @@ export function ModeLab() {
   };
 
   const running = progress !== null;
+  // Only built once every mode has finished, so a partial run never shows a gap.
+  const skillRows = summary ? roomForSkill(rows, STRATEGIES) : [];
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6">
@@ -185,6 +188,37 @@ export function ModeLab() {
           </section>
         );
       })}
+
+      {summary && skillRows.length > 0 && (
+        <section className="mb-8" aria-label="Room for skill">
+          <h2 className="mb-2 text-lg font-semibold text-slate-900">Room for skill (medians over the same games)</h2>
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-slate-700">
+                <tr>
+                  {SKILL_COLUMNS.map((column) => (
+                    <th key={column.header} scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">
+                      {column.header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {skillRows.map((row) => (
+                  <tr key={row.mode} className="border-t border-slate-100">
+                    {SKILL_COLUMNS.map((column) => (
+                      <td key={column.header} className="whitespace-nowrap px-3 py-2 tabular-nums text-slate-900">
+                        {column.cell(row)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 max-w-3xl text-sm text-slate-600">{SKILL_NOTE}</p>
+        </section>
+      )}
     </main>
   );
 }

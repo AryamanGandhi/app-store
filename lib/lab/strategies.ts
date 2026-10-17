@@ -9,6 +9,8 @@ export type Strategy = {
   name: string;
   description: string;
   chooseAction(state: GameState, market: Market, rng: Rng): GameAction;
+  // True for a bot that cheats by reading future prices, so reports can tell it from honest players.
+  readsFuture?: boolean;
 };
 
 function smallestAmount(options: SpendOptions): number {
@@ -123,6 +125,7 @@ export function exitYear(state: GameState): number {
 
 export const hindsight: Strategy = {
   name: "Hindsight",
+  readsFuture: true,
   description: "Cheats by reading future prices. Buys the stock that gains the most by the time it's sold, at the largest allowed amount, and skips when every stock would lose money. Never sells.",
   chooseAction(state, market) {
     const options = getSpendOptions(state);
