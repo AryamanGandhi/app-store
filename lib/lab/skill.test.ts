@@ -16,7 +16,7 @@ const strategies = [honestA, honestB, reader];
 
 const row = (mode: string, strategy: string, median: number): LabRow => ({
   mode, strategy, games: 10, avgBuys: 0, avgSkips: 0, avgSales: 0, avgAutoSells: 0, avgRoundsWithNoBuy: 0,
-  blockedCardShare: 0, avgIdleCash: 0, finalValueLow: 0, finalValueMedian: median, finalValueHigh: 0, stuckGames: 0,
+  blockedCardShare: 0, avgIdleCash: 0, finalValueLow: 0, finalValueMedian: median, finalValueHigh: 0, stuckGames: 0, movesKey: "",
 });
 
 describe("roomForSkill", () => {

@@ -1,7 +1,7 @@
 import { canSell, createGameReducer, getHoldingValue, getSpendOptions, startGame } from "@/lib/engine";
 import type { Strategy } from "@/lib/lab/strategies";
 import { createRng, deriveSeed } from "@/lib/random";
-import type { GameConfig, GameState, Market } from "@/lib/types";
+import type { GameAction, GameConfig, GameState, Market } from "@/lib/types";
 
 export type GameRecord = {
   buys: number;
@@ -14,6 +14,8 @@ export type GameRecord = {
   idleCash: number;
   finalValue: number;
   stuck: boolean;
+  // Every move the bot made, in order, so two bots can be checked for playing identically.
+  moves: string;
 };
 
 export type LabRow = {
@@ -31,6 +33,8 @@ export type LabRow = {
   finalValueMedian: number;
   finalValueHigh: number;
   stuckGames: number;
+  // Every game's moves in seed order. Kept as exact text, not a hash, so a match is never a collision.
+  movesKey: string;
 };
 
 export type LabMode = { name: string; config: GameConfig };
@@ -44,14 +48,30 @@ export function hasLegalAction(state: GameState, market: Market): boolean {
   return canBuy || canSkip || canSellAny;
 }
 
+// Amounts are whole cents so two equal amounts always print the same.
+export function moveEntry(action: GameAction): string {
+  if (action.type === "BUY") {
+    return `B:${action.ticker}:${Math.round(action.amount * 100)}`;
+  }
+  if (action.type === "SELL") {
+    return `S:${action.holdingId}`;
+  }
+  if (action.type === "SKIP") {
+    return "K";
+  }
+  // The reducer accepts RESTART as a new game, so the illegal-move check wouldn't catch a bot sending one.
+  throw new Error("A bot can't restart the game.");
+}
+
 export function playGame(config: GameConfig, market: Market, strategy: Strategy, seed: number): GameRecord {
   const reducer = createGameReducer(market);
   // Actions draw from their own stream so a seed replays the same game for every bot.
   const actionRng = createRng(deriveSeed(seed, 2404));
   const record: GameRecord = {
     buys: 0, skips: 0, sales: 0, autoSells: 0, roundsWithNoBuy: 0,
-    cardsShown: 0, cardsBlocked: 0, idleCash: 0, finalValue: 0, stuck: false,
+    cardsShown: 0, cardsBlocked: 0, idleCash: 0, finalValue: 0, stuck: false, moves: "",
   };
+  const moves: string[] = [];
   let state = startGame(config, market, seed);
   let roundCounted = 0;
 
@@ -77,6 +97,7 @@ export function playGame(config: GameConfig, market: Market, strategy: Strategy,
       throw new Error(`${strategy.name} tried an illegal ${action.type} in round ${state.round} (seed ${seed}).`);
     }
 
+    moves.push(moveEntry(action));
     if (action.type === "SELL") {
       record.sales += 1;
     } else {
@@ -91,6 +112,7 @@ export function playGame(config: GameConfig, market: Market, strategy: Strategy,
   }
 
   const holdingsValue = state.holdings.reduce((total, holding) => total + getHoldingValue(holding, market, state.year), 0);
+  record.moves = moves.join(",");
   record.idleCash = state.cash;
   record.finalValue = Math.round((state.cash + holdingsValue) * 100) / 100;
 
@@ -125,6 +147,7 @@ export function summarize(mode: string, strategy: string, records: GameRecord[])
     finalValueMedian: percentile(finalValues, 0.5),
     finalValueHigh: percentile(finalValues, 0.9),
     stuckGames: records.filter((record) => record.stuck).length,
+    movesKey: records.map((record) => record.moves).join("\n"),
   };
 }
 

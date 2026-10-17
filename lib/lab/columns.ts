@@ -21,6 +21,11 @@ export const LAB_COLUMNS: { header: string; cell: (row: LabRow) => string }[] = 
 
 export const LAB_NOTE = "Averages are per game. Idle cash is cash not in any stock when the game ends.";
 
+export function sameMovesLine(bots: string[], games: number): string {
+  const names = bots.length < 2 ? bots.join("") : `${bots.slice(0, -1).join(", ")} and ${bots[bots.length - 1]}`;
+  return `Same moves in all ${games.toLocaleString("en-US")} games: ${names}.`;
+}
+
 // Shared by the npm script and the /dev/lab page so both print the same Room for skill table.
 export const SKILL_COLUMNS: { header: string; cell: (row: SkillRow) => string }[] = [
   { header: "Mode", cell: (row) => row.mode },

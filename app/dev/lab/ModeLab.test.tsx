@@ -4,8 +4,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ModeLab } from "@/app/dev/lab/ModeLab";
 import { fakeMarket } from "@/lib/data/market";
 import { PRESET_MODES } from "@/lib/data/modes";
-import { LAB_COLUMNS, SKILL_COLUMNS } from "@/lib/lab/columns";
+import { LAB_COLUMNS, sameMovesLine, SKILL_COLUMNS } from "@/lib/lab/columns";
 import { runLab } from "@/lib/lab/run";
+import { sameMoveGroups } from "@/lib/lab/same-moves";
 import { roomForSkill } from "@/lib/lab/skill";
 import { STRATEGIES } from "@/lib/lab/strategies";
 
@@ -85,6 +86,31 @@ describe("ModeLab", () => {
       const cells = within(row).getAllByRole("cell").map((cell) => cell.textContent);
       expect(cells).toEqual(SKILL_COLUMNS.map((column) => column.cell(expected[index])));
     });
+  }, 20000);
+
+  it("shows the same-moves lines under each mode, matching the script", async () => {
+    await runWith("100", "7");
+    const totalGames = (100 * PRESET_MODES.length * STRATEGIES.length).toLocaleString("en-US");
+    await waitFor(() => expect(screen.getByText(new RegExp(`${totalGames} games in`))).toBeInTheDocument(), { timeout: 10000 });
+
+    const groups = sameMoveGroups(runLab({
+      modes: PRESET_MODES.map((mode) => ({ name: mode.name, config: mode.config })),
+      strategies: STRATEGIES,
+      market: fakeMarket,
+      games: 100,
+      seed: 7,
+    }));
+    const modeSections = screen.getAllByRole("heading", { level: 2 })
+      .filter((heading) => PRESET_MODES.some((mode) => mode.name === heading.textContent))
+      .map((heading) => heading.closest("section")!);
+
+    expect(modeSections).toHaveLength(PRESET_MODES.length);
+    modeSections.forEach((section, index) => {
+      const shown = within(section).queryAllByTestId("same-moves").map((line) => line.textContent);
+      const expected = groups.filter((group) => group.mode === PRESET_MODES[index].name).map((group) => sameMovesLine(group.bots, 100));
+      expect(shown).toEqual(expected);
+    });
+    expect(groups.length).toBeGreaterThan(0);
   }, 20000);
 
   it("rejects a seed that isn't a whole number and runs nothing", async () => {
