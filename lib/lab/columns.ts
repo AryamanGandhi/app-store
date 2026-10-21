@@ -29,13 +29,16 @@ export function sameMovesLine(bots: string[], games: number): string {
 // Shared by the npm script and the /dev/lab page so both print the same Room for skill table.
 export const SKILL_COLUMNS: { header: string; cell: (row: SkillRow) => string }[] = [
   { header: "Mode", cell: (row) => row.mode },
-  { header: "Best honest bot", cell: (row) => row.bestBots.join(", ") },
-  { header: "Best honest median", cell: (row) => dollars(row.bestHonest) },
+  { header: "Best simple bot", cell: (row) => row.bestBots.join(", ") },
+  { header: "Best simple median", cell: (row) => dollars(row.bestSimple) },
+  { header: "Note taker median", cell: (row) => dollars(row.noteTaker) },
   { header: "Hindsight median", cell: (row) => dollars(row.ceiling) },
   { header: "Room for skill", cell: (row) => formatChange(dollars, row.gap) },
+  { header: "Reachable skill", cell: (row) => formatChange(dollars, row.reachable) },
+  { header: "Share reached", cell: (row) => (row.gap > 0 ? `${Math.round((row.reachable / row.gap) * 100)}%` : "n/a") },
 ];
 
-export const SKILL_NOTE = "Room for skill is Hindsight's median minus the best honest bot's median. Hindsight reads future prices, so it marks the best result a mode allows, not a real player. Prices come from the sandbox's fake market.";
+export const SKILL_NOTE = "Room for skill is Hindsight's median minus the best simple bot's median. Hindsight reads future prices, so it marks the best result a mode allows, not a real player. The Note taker only uses prices it has been shown on a board. Reachable skill is the Note taker's median minus the best simple bot's median, and Share reached is how much of the room for skill that covers. Prices come from the sandbox's fake market.";
 
 const percent = (value: number) => `${Math.round(value)}%`;
 const toTenths = (value: number) => Math.round(value * 10) / 10;
