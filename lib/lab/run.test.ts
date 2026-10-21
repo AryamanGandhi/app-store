@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { startGame } from "@/lib/engine";
 import { gameSeedsForMode, hasLegalAction, moveEntry, playGame, runComparison, runLab, summarize, type GameRecord } from "@/lib/lab/run";
-import { bigSpender, pennyPincher, randomPlayer, STRATEGIES, type Strategy } from "@/lib/lab/strategies";
+import { bigSpender, pennyPincher, randomPlayer, STRATEGIES, type SeenPrices, type Strategy } from "@/lib/lab/strategies";
 import {
   createTestMarket,
   sampleConfigActive,
@@ -108,11 +108,11 @@ describe("runComparison", () => {
     const firstBoards: Record<string, string[][]> = { Swap: [], "Swap, no selling": [] };
     const recordFirstBoard: Strategy = {
       ...bigSpender,
-      chooseAction(state, gameMarket, rng) {
+      chooseAction(state, gameMarket, rng, seen) {
         if (state.round === 1) {
           firstBoards[state.config.selling === "none" ? "Swap, no selling" : "Swap"].push(state.board.map((entry) => entry.stock.ticker));
         }
-        return bigSpender.chooseAction(state, gameMarket, rng);
+        return bigSpender.chooseAction(state, gameMarket, rng, seen);
       },
     };
 
@@ -170,5 +170,64 @@ describe("move logs", () => {
 
     expect(summarize("M", "Bot", [record("K"), record("B:QNT:100")]).movesKey).toBe("K\nB:QNT:100");
     expect(summarize("M", "Bot", [record("B:QNT:100"), record("K")]).movesKey).toBe("B:QNT:100\nK");
+  });
+});
+
+
+describe("seen prices", () => {
+  it("passes exactly the boards shown, including blocked cards and repeated turns", () => {
+    const expected: SeenPrices = {};
+    let calls = 0;
+    let blocked = 0;
+    let repeated = 0;
+    let lastRound = 0;
+    const watched: Strategy = {
+      ...bigSpender,
+      chooseAction(state, gameMarket, rng, seen) {
+        for (const entry of state.board) {
+          (expected[entry.stock.ticker] ??= {})[state.year] = entry.price;
+          blocked += Number(!entry.pickable);
+        }
+        repeated += Number(lastRound === state.round);
+        lastRound = state.round;
+        expect(seen).toEqual(expected);
+        calls += 1;
+        if (state.config.selling === "any" && state.round === 2 && state.holdings.length > 0) {
+          return { type: "SELL", holdingId: state.holdings[0].id };
+        }
+        return bigSpender.chooseAction(state, gameMarket, rng, seen);
+      },
+    };
+    playGame(sampleConfigClassic, market, watched, 42);
+    expect(calls).toBeGreaterThan(0);
+    expect(blocked).toBeGreaterThan(0);
+
+    for (const key of Object.keys(expected)) delete expected[key];
+    lastRound = 0;
+    playGame(sampleConfigActive, market, watched, 42);
+    expect(repeated).toBeGreaterThan(0);
+  });
+
+  it("starts fresh for the same bot and seed on every game", () => {
+    const records: SeenPrices[] = [];
+    let expected: SeenPrices = {};
+    const watched: Strategy = {
+      ...bigSpender,
+      chooseAction(state, gameMarket, rng, seen) {
+        if (state.round === 1) {
+          expected = {};
+          expect(records.some((record) => record === seen)).toBe(false);
+          records.push(seen);
+        }
+        for (const entry of state.board) {
+          (expected[entry.stock.ticker] ??= {})[state.year] = entry.price;
+        }
+        expect(seen).toEqual(expected);
+        return bigSpender.chooseAction(state, gameMarket, rng, seen);
+      },
+    };
+    playGame(sampleConfigClassic, market, watched, 42);
+    playGame(sampleConfigClassic, market, watched, 42);
+    expect(records).toHaveLength(2);
   });
 });
