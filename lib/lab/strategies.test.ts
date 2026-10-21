@@ -148,7 +148,7 @@ describe("noteTaker", () => {
   });
 
   it("falls back to the same random pick as Big spender", () => {
-    const seen = { [a]: { 2010: 100 }, [b]: {}, [c]: { 2009: 50 } };
+    const seen: SeenPrices = { [a]: { 2010: 100 }, [b]: {}, [c]: { 2009: 50 } };
     for (const seed of [1, 2, 3, 4, 5]) {
       expect(noteTaker.chooseAction(state, market, createRng(seed), seen))
         .toEqual(bigSpender.chooseAction(state, market, createRng(seed), seen));

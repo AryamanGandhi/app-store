@@ -1,5 +1,5 @@
 import { canSell, createGameReducer, getHoldingValue, getSpendOptions, startGame } from "@/lib/engine";
-import type { Strategy } from "@/lib/lab/strategies";
+import type { SeenPrices, Strategy } from "@/lib/lab/strategies";
 import { createRng, deriveSeed } from "@/lib/random";
 import type { GameAction, GameConfig, GameState, Market } from "@/lib/types";
 
@@ -72,6 +72,7 @@ export function playGame(config: GameConfig, market: Market, strategy: Strategy,
     cardsShown: 0, cardsBlocked: 0, idleCash: 0, finalValue: 0, stuck: false, moves: "",
   };
   const moves: string[] = [];
+  const seen: SeenPrices = {};
   let state = startGame(config, market, seed);
   let roundCounted = 0;
 
@@ -90,7 +91,13 @@ export function playGame(config: GameConfig, market: Market, strategy: Strategy,
       break;
     }
 
-    const action = strategy.chooseAction(state, market, actionRng);
+    // Bots only get prices a player has seen on a board, so nothing from a year not yet reached.
+    for (const entry of state.board) {
+      seen[entry.stock.ticker] ??= {};
+      seen[entry.stock.ticker][state.year] = entry.price;
+    }
+
+    const action = strategy.chooseAction(state, market, actionRng, seen);
     const next = reducer(state, action);
 
     if (next === state) {

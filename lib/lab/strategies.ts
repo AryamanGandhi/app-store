@@ -4,13 +4,18 @@ import type { GameAction, GameState, Market, SpendOptions, Stock } from "@/lib/t
 
 export type Rng = ReturnType<typeof createRng>;
 
+// Ticker -> year -> the price shown for that ticker on a board in that year.
+export type SeenPrices = Record<string, Record<number, number>>;
+
 // A bot sees what a player sees and returns one action. The runner calls it until the game ends.
 export type Strategy = {
   name: string;
   description: string;
-  chooseAction(state: GameState, market: Market, rng: Rng): GameAction;
+  chooseAction(state: GameState, market: Market, rng: Rng, seen: SeenPrices): GameAction;
   // True for a bot that cheats by reading future prices, so reports can tell it from honest players.
   readsFuture?: boolean;
+  // True for a bot that decides from prices it was shown, so reports can tell it from simple bots.
+  readsPastPrices?: boolean;
 };
 
 function smallestAmount(options: SpendOptions): number {
@@ -115,6 +120,43 @@ export const churner: Strategy = {
   },
 };
 
+// Yearly growth between the earliest and latest prices seen, or null with fewer than two years seen.
+function seenTrend(prices: Record<number, number> | undefined): number | null {
+  const years = Object.keys(prices ?? {}).map(Number);
+  if (!prices || years.length < 2) {
+    return null;
+  }
+
+  const earliest = Math.min(...years);
+  const latest = Math.max(...years);
+  return (prices[latest] / prices[earliest]) ** (1 / (latest - earliest));
+}
+
+export const noteTaker: Strategy = {
+  name: "Note taker",
+  readsPastPrices: true,
+  description: "Buys the stock whose shown prices rose fastest per year, at the largest allowed amount, or a random one when it has no notes yet. Never sells.",
+  chooseAction(state, _market, rng, seen) {
+    const options = getSpendOptions(state);
+    const pickable = state.board.filter((entry) => entry.pickable);
+
+    if (!options.canBuy || pickable.length === 0) {
+      return { type: "SKIP" };
+    }
+
+    let best: { stock: Stock; trend: number } | null = null;
+    for (const entry of pickable) {
+      const trend = seenTrend(seen[entry.stock.ticker]);
+      if (trend !== null && (best === null || trend > best.trend)) {
+        best = { stock: entry.stock, trend };
+      }
+    }
+
+    const stock = best ? best.stock : rng.pick(pickable).stock;
+    return { type: "BUY", ticker: stock.ticker, amount: largestAmount(options) };
+  },
+};
+
 // The year a stock bought now gets valued: when its hold ends, or the last round's year if that comes first.
 export function exitYear(state: GameState): number {
   const lastYear = state.startYear + state.config.rounds - 1;
@@ -143,4 +185,4 @@ export const hindsight: Strategy = {
   },
 };
 
-export const STRATEGIES: Strategy[] = [randomPlayer, bigSpender, pennyPincher, loyalist, churner, hindsight];
+export const STRATEGIES: Strategy[] = [randomPlayer, bigSpender, pennyPincher, loyalist, churner, noteTaker, hindsight];
